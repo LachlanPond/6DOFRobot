@@ -1,14 +1,31 @@
+#ifndef __AVR_ATmega328P__
+	#define __AVR_ATmega328P__
+#endif
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
+
+#include "defines.h"
+#include "globals.h"
 
 int micro_steps = 1;
 int radians_per_second_x1000 = 100;
 int packet_complete = 0;
 int packet_byte_counter = 0;
 unsigned char packet[32];
+double J1_degrees = 0;
+double J2_degrees = 0;
+double J3_degrees = 0;
+double J4_degrees = 0;
+double J5_degrees = 0;
+double J6_degrees = 0;
+unsigned int J1_degrees_setpoint_x100 = 0;
+unsigned int J2_degrees_setpoint_x100 = 0;
+unsigned int J3_degrees_setpoint_x100 = 0;
+unsigned int J4_degrees_setpoint_x100 = 0;
+unsigned int J5_degrees_setpoint_x100 = 0;
+unsigned int J6_degrees_setpoint_x100 = 0;
 
-#include "globals.h"
 #include "functions.h"
 
 int main(void){
@@ -28,6 +45,7 @@ int main(void){
 			joint_delay_count = 0;
 		}
 
+		// If a new packet comes through, update
 		Check_Packet();
 
 		joint1_delay_count++;

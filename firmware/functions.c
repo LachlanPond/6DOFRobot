@@ -1,5 +1,9 @@
+#ifndef __AVR_ATmega328P__
+	#define __AVR_ATmega328P__
+#endif
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include "defines.h"
 #include "globals.h"
 
 void Setup() {
@@ -51,13 +55,32 @@ void Save_Joint_Positions_To_EEPROM() {
 
 }
 
-void Check_Packet(int packet_complete, unsigned char packet[]) {
+void Calibrate_Joints() {
+	J1_degrees = 0;
+	J2_degrees = 0;
+	J3_degrees = 0;
+	J4_degrees = 0;
+	J5_degrees = 0;
+	J6_degrees = 0;
+}
+
+void Check_Packet() {
 	if (packet_complete) {
 		if (packet[0] == 'S') {
 			Save_Joint_Positions_To_EEPROM();
-			packet_complete = 0;
-			return;
+		}
+		else if (packet[0] == 'C') {
+			Calibrate_Joints();
+		}
+		else {
+			// Set global variables with packet data
+			radians_per_second_x1000 = (packet[1] << 8) | (packet[0]);
+			J1_degrees_setpoint_x100 = (packet[2] << 8) | (packet[3]);
+			J2_degrees_setpoint_x100 = (packet[4] << 8) | (packet[5]);
+			J3_degrees_setpoint_x100 = (packet[6] << 8) | (packet[7]);
+			J4_degrees_setpoint_x100 = (packet[8] << 8) | (packet[9]);
+			J5_degrees_setpoint_x100 = (packet[10] << 8) | (packet[11]);
+			J6_degrees_setpoint_x100 = (packet[12] << 8) | (packet[13]);
 		}
 	}
-	packet_complete = 0;
 }
