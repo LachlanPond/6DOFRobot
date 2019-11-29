@@ -20,6 +20,11 @@ void Setup() {
 	// Frame format is set in the UCSRnC register but the defaults already give us 8bit, no parity, and 1 stopbit
 	// Enable global interrupts in order to use the RX and TX interrupts
 	sei();
+
+	// Setup data direction registers
+	DDRB = 0b00111111;
+	DDRC = 0b00111111;
+	DDRD = 0b11111100;
 }
 
 unsigned char USART_Receive() {

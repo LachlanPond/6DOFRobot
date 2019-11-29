@@ -56,7 +56,6 @@ int main(void){
 }
 
 ISR(USART_RX_vect) {
-	// Return received byte from the buffer
 	unsigned char byte = UDR0;
 	packet[packet_byte_counter] = byte;
 	packet_byte_counter++;
@@ -64,4 +63,5 @@ ISR(USART_RX_vect) {
 		packet_complete = 1;
 		packet_byte_counter = 0;
 	}
+	USART_Transmit(byte);
 }
