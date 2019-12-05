@@ -10,6 +10,15 @@
 volatile int packet_complete = 0;
 volatile int packet_byte_counter = 0;
 volatile unsigned char packet[32];
+volatile int step_generating_compare_match_toggle_J1 = 0;
+volatile int step_generating_compare_match_toggle_J = 0;
+
+volatile unsigned int J1_steps = 0;
+volatile unsigned int J2_steps = 0;
+volatile unsigned int J3_steps = 0;
+volatile unsigned int J4_steps = 0;
+volatile unsigned int J5_steps = 0;
+volatile unsigned int J6_steps = 0;
 
 #include "functions.h"
 
@@ -18,17 +27,6 @@ int main(){
 	int micro_steps = 1;
 	int radians_per_second_x1000 = 100;
 
-	int J1_delay = 0;
-	int J_delay = 0;
-	int J1_delay_count = 0;
-	int J_delay_count = 0;
-
-	unsigned int J1_steps;
-	unsigned int J2_steps = 0;
-	unsigned int J3_steps = 0;
-	unsigned int J4_steps = 0;
-	unsigned int J5_steps = 0;
-	unsigned int J6_steps = 0;
 	unsigned char J1_direction = 0;
 	unsigned char J2_direction = 0;
 	unsigned char J3_direction = 0;
@@ -36,22 +34,9 @@ int main(){
 	unsigned char J5_direction = 0;
 	unsigned char J6_direction = 0;
 
-	J1_delay = Set_Joint_Speed(radians_per_second_x1000, 1, J1_GEAR_RATIO, J_GEAR_RATIO, micro_steps);
-	J_delay = Set_Joint_Speed(radians_per_second_x1000, 0, J1_GEAR_RATIO, J_GEAR_RATIO, micro_steps);
-
-	J1_delay = 30000;
-	J1_steps = 30000;
-
 	Setup();
-	USART_Transmit_Msg("It's being reset!");
 	while(1) {
-		//Check_Packet(&packet_complete, packet);
-		// if (J1_steps > 0) {
-		// 	J1_steps--;
-		// }
-		// if (J1_steps == 2) {
-		// 	USART_Transmit_Byte('@');
-		// }
+		Check_Packet(&packet_complete, packet);
 	}
 	return 0;
 }
@@ -64,4 +49,47 @@ ISR(USART_RX_vect) {
 		packet_complete = 1;
 		packet_byte_counter = 0;
 	}
+}
+
+ISR(TIMER0_COMPA_vect) {
+	if (step_generating_compare_match_toggle_J1) {
+		if (J1_steps > -1) {
+			PORTD |= (1<<MTR1_STEP);
+			J1_steps--;
+		}
+	}
+	else {
+		PORTD &= ~(1<<MTR1_STEP);
+	}
+	step_generating_compare_match_toggle_J1 = !step_generating_compare_match_toggle_J1;
+}
+
+ISR(TIMER2_COMPA_vect) {
+	if (step_generating_compare_match_toggle_J) {
+		if (J2_steps > -1) {
+			PORTD |= (1<<MTR2_STEP);
+			J2_steps--;
+		}
+		if (J3_steps > -1) {
+			PORTC |= (1<<MTR3_STEP);
+			J3_steps--;
+		}
+		if (J4_steps > -1) {
+			PORTC |= (1<<MTR4_STEP);
+			J4_steps--;
+		}
+		if (J5_steps > -1) {
+			PORTC |= (1<<MTR5_STEP);
+			J5_steps--;
+		}
+		if (J6_steps > -1) {
+			PORTC |= (1<<MTR6_STEP);
+			J6_steps--;
+		}
+	}
+	else {
+		PORTD &= ~(1<<MTR2_STEP);
+		PORTC &= ~(1<<MTR3_STEP) | ~(1<<MTR4_STEP) | ~(MTR5_STEP) | ~(MTR6_STEP);
+	}
+	step_generating_compare_match_toggle_J = !step_generating_compare_match_toggle_J;
 }

@@ -15,9 +15,27 @@ void Setup() {
 	// Setup the USART serial with baud 115200, 8bit byte size, no parity, 1 stopbit
 	UBRR0H = 0b00000000;		// Select the 115200 baud rate option for a 16Mhz clock (UBRR0 = 8)
 	UBRR0L = 0b00001000;
-	// Enable RX and TX, and the RX and TX interrupts
+	// Enable RX and TX, and the RX interrupt
 	UCSR0B = (1<<RXEN0) | (1<<TXEN0) | (1<<RXCIE0);
 	// Frame format is set in the UCSRnC register but the defaults already give us 8bit, no parity, and 1 stopbit
+	// Enable CTC (Clear Timer on Compare mode) for 8-bit timer/Counter0
+	TCCR0A |= (1<<WGM01);
+	// Set the Output Compare Register A to some value before the rest of the timer setup (not sure if neccessary)
+	OCR0A = 255;
+	// Set the prescalar for the 8-bit timer 0 to 1024, providing a nice range of speeds for the stepper motors
+	TCCR0B |= (1<<CS00) | (1<<CS02);
+	// Turn on the Compare Match A interrupt
+	TIMSK0 |= (1<<OCIE0A);
+
+	// Enable CTC (Clear Timer on Compare mode) for 8-bit timer/Counter2
+	TCCR2A |= (1<<WGM21);
+	// Set the Output Compare Register A to some value before the rest of the timer setup (not sure if neccessary)
+	OCR2A = 255;
+	// Set the prescalar for the 8-bit timer 2 to 1024, providing a nice range of speeds for the stepper motors
+	TCCR0B |= (1<<CS20) | (1<<CS21) | (1<<CS22);
+	// Turn on the Compare Match A interrupt
+	TIMSK2 |= (1<<OCIE2A);
+
 	// Enable global interrupts in order to use the RX and TX interrupts
 	sei();
 
@@ -41,21 +59,6 @@ void USART_Transmit_Msg(unsigned char *data) {
 	}
 }
 
-int Set_Joint_Speed(int radians_per_second_x1000, int joint1, int J1_gear_ratio, int j_gear_ratio, int micro_steps) {
-	double radians_per_second = (double)radians_per_second_x1000 / 1000;
-	double degrees_per_pulse = 0;
-	if (joint1) {
-		degrees_per_pulse = (DEGREES_PER_STEP/(double)micro_steps) * (1/(double)J1_GEAR_RATIO);
-	}
-	else {
-		degrees_per_pulse = (DEGREES_PER_STEP/(double)micro_steps) * (1/(double)J_GEAR_RATIO);
-	}
-	double radians_per_pulse = degrees_per_pulse * (PI/180);
-	double pulses_to_make_a_radian = 1/radians_per_pulse;
-	int step_delay = (MS_IN_SEC / pulses_to_make_a_radian) / radians_per_second;
-	return step_delay;
-}
-
 void Set_Motor_Directions(int J1, int J2, int J3, int J4, int J5, int J6) {
 	if (J1) PORTC |= (1<<MTR1_DIR); else PORTC &= ~(1<<MTR1_DIR);
 	if (J2) PORTC |= (1<<MTR2_DIR); else PORTC &= ~(1<<MTR2_DIR);
@@ -67,9 +70,7 @@ void Set_Motor_Directions(int J1, int J2, int J3, int J4, int J5, int J6) {
 
 void Check_Packet(volatile int *packet_complete, volatile unsigned char packet[]) {
 	if (*packet_complete) {
-		if (packet[0] == 'k') {
-			USART_Transmit_Byte('!');
-		}
+		if (packet[0] == 'k') USART_Transmit_Byte('!');
 		// Set global variables with packet data
 		// radians_per_second_x1000 = (packet[1] << 8) | (packet[0]);
 		// J1_steps = (packet[2] << 8) | (packet[3]);
