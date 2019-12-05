@@ -36,7 +36,27 @@ int main(){
 
 	Setup();
 	while(1) {
-		Check_Packet(&packet_complete, packet);
+		if (packet_complete) {
+			// Set global variables with packet data
+			//OCR0A = packet[0];
+			//OCR2A = packet[1];
+			J1_steps = (packet[2] << 8) | (packet[3]);
+			J2_steps = (packet[4] << 8) | (packet[5]);
+			J3_steps = (packet[6] << 8) | (packet[7]);
+			J4_steps = (packet[8] << 8) | (packet[9]);
+			J5_steps = (packet[10] << 8) | (packet[11]);
+			J6_steps = (packet[12] << 8) | (packet[13]);
+			J1_direction = (packet[14] == 'P') ? 1 : 0;
+			J2_direction = (packet[15] == 'P') ? 1 : 0;
+			J3_direction = (packet[16] == 'P') ? 1 : 0;
+			J4_direction = (packet[17] == 'P') ? 1 : 0;
+			J5_direction = (packet[18] == 'P') ? 1 : 0;
+			J6_direction = (packet[19] == 'P') ? 1 : 0;
+			if (J6_steps == 12200) {
+				USART_Transmit_Msg("testing 123");
+			}
+			packet_complete = 0;
+		}
 	}
 	return 0;
 }
