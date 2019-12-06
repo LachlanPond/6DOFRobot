@@ -13,6 +13,11 @@ volatile unsigned char packet[32];
 volatile int step_generating_compare_match_toggle_J1 = 0;
 volatile int step_generating_compare_match_toggle_J = 0;
 
+struct Joint {
+	volatile unsigned int steps;
+	volatile unsigned char dir;
+};
+
 volatile unsigned int J1_steps = 0;
 volatile unsigned int J2_steps = 0;
 volatile unsigned int J3_steps = 0;
@@ -20,19 +25,16 @@ volatile unsigned int J4_steps = 0;
 volatile unsigned int J5_steps = 0;
 volatile unsigned int J6_steps = 0;
 
+struct Joint J1 = {0,0};
+struct Joint J2 = {0,0};
+struct Joint J3 = {0,0};
+struct Joint J4 = {0,0};
+struct Joint J5 = {0,0};
+struct Joint J6 = {0,0};
+
 #include "functions.h"
 
 int main(){
-
-	int micro_steps = 1;
-	int radians_per_second_x1000 = 100;
-
-	unsigned char J1_direction = 0;
-	unsigned char J2_direction = 0;
-	unsigned char J3_direction = 0;
-	unsigned char J4_direction = 0;
-	unsigned char J5_direction = 0;
-	unsigned char J6_direction = 0;
 
 	Setup();
 	while(1) {
@@ -40,21 +42,18 @@ int main(){
 			// Set global variables with packet data
 			//OCR0A = packet[0];
 			//OCR2A = packet[1];
-			J1_steps = (packet[2] << 8) | (packet[3]);
-			J2_steps = (packet[4] << 8) | (packet[5]);
-			J3_steps = (packet[6] << 8) | (packet[7]);
-			J4_steps = (packet[8] << 8) | (packet[9]);
-			J5_steps = (packet[10] << 8) | (packet[11]);
-			J6_steps = (packet[12] << 8) | (packet[13]);
-			J1_direction = (packet[14] == 'P') ? 1 : 0;
-			J2_direction = (packet[15] == 'P') ? 1 : 0;
-			J3_direction = (packet[16] == 'P') ? 1 : 0;
-			J4_direction = (packet[17] == 'P') ? 1 : 0;
-			J5_direction = (packet[18] == 'P') ? 1 : 0;
-			J6_direction = (packet[19] == 'P') ? 1 : 0;
-			if (J6_steps == 12200) {
-				USART_Transmit_Msg("testing 123");
-			}
+			J1.steps = (packet[2] << 8) | (packet[3]);
+			J2.steps = (packet[4] << 8) | (packet[5]);
+			J3.steps = (packet[6] << 8) | (packet[7]);
+			J4.steps = (packet[8] << 8) | (packet[9]);
+			J5.steps = (packet[10] << 8) | (packet[11]);
+			J6.steps = (packet[12] << 8) | (packet[13]);
+			J1.dir = (packet[14] == 'P') ? 1 : 0;
+			J2.dir = (packet[15] == 'P') ? 1 : 0;
+			J3.dir = (packet[16] == 'P') ? 1 : 0;
+			J4.dir = (packet[17] == 'P') ? 1 : 0;
+			J5.dir = (packet[18] == 'P') ? 1 : 0;
+			J6.dir = (packet[19] == 'P') ? 1 : 0;
 			packet_complete = 0;
 		}
 	}
@@ -73,9 +72,9 @@ ISR(USART_RX_vect) {
 
 ISR(TIMER0_COMPA_vect) {
 	if (step_generating_compare_match_toggle_J1) {
-		if (J1_steps > -1) {
+		if (J1.steps > -1) {
 			PORTD |= (1<<MTR1_STEP);
-			J1_steps--;
+			J1.steps--;
 		}
 	}
 	else {
@@ -86,25 +85,25 @@ ISR(TIMER0_COMPA_vect) {
 
 ISR(TIMER2_COMPA_vect) {
 	if (step_generating_compare_match_toggle_J) {
-		if (J2_steps > -1) {
+		if (J2.steps > -1) {
 			PORTD |= (1<<MTR2_STEP);
-			J2_steps--;
+			J2.steps--;
 		}
-		if (J3_steps > -1) {
+		if (J3.steps > -1) {
 			PORTC |= (1<<MTR3_STEP);
-			J3_steps--;
+			J3.steps--;
 		}
-		if (J4_steps > -1) {
+		if (J4.steps > -1) {
 			PORTC |= (1<<MTR4_STEP);
-			J4_steps--;
+			J4.steps--;
 		}
-		if (J5_steps > -1) {
+		if (J5.steps > -1) {
 			PORTC |= (1<<MTR5_STEP);
-			J5_steps--;
+			J5.steps--;
 		}
-		if (J6_steps > -1) {
+		if (J6.steps > -1) {
 			PORTC |= (1<<MTR6_STEP);
-			J6_steps--;
+			J6.steps--;
 		}
 	}
 	else {
